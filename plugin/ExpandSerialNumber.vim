@@ -13,19 +13,19 @@ command! -range ExpandSerialNumber <line1>,<line2>call s:ExpandSerialNumber()
 
 "--------------------------------------
 " setting
-if exists("g:expand_serial_num_delimiter")
-	let s:delim = g:expand_serial_num_delimiter
+if exists("g:expand_serial_number_delimiter")
+	let s:delim = g:expand_serial_number_delimiter
 else
 	let s:delim = ['\[', '\]']
 endif
 
-if exists("g:expand_serial_num_separator")
-	let s:separator = g:expand_serial_num_separator
+if exists("g:expand_serial_number_separator")
+	let s:separator = g:expand_serial_number_separator
 else
 	let s:separator = '-'
 endif
 
-if exists("g:expand_serial_num_experimental")
+if exists("g:expand_serial_number_experimental")
 	let s:experimental = 1
 else
 	let s:experimental = 0
