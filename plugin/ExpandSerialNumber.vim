@@ -95,22 +95,21 @@ function! s:expandnum(line, ref)
 			else
 				let l:line = l:strPre . printf('%0'. l:digit . 'd', i) . l:strSuf
 			endif
-			if (s:experimental == 1)
-				if (match(l:line, s:strPat) == -1)
-					if (match(l:line, s:delim[0] . '\(.\{-}\)' . s:delim[1]) != -1)
-						let l:temp_pre = substitute(l:line, '\(.*\)' . s:delim[0] . '\(.\{-}\)' . s:delim[1] . '\(.*\)', '\1', '')
-						let l:temp     = substitute(l:line, '\(.*\)' . s:delim[0] . '\(.\{-}\)' . s:delim[1] . '\(.*\)', '\2', '')
-						let l:temp_suf = substitute(l:line, '\(.*\)' . s:delim[0] . '\(.\{-}\)' . s:delim[1] . '\(.*\)', '\3', '')
-						if (l:temp != "")
-							let l:posteval = eval(l:temp)
-							if (l:posteval != l:temp)
-								let l:line = l:temp_pre . l:posteval . l:temp_suf
-							endif
+			let l:line = s:backref(l:line, i, a:ref)
+			if (match(l:line, s:strPat) == -1)
+				if (match(l:line, s:delim[0] . '\(.\{-}\)' . s:delim[1]) != -1)
+					let l:temp_pre = substitute(l:line, '\(.*\)' . s:delim[0] . '\(.\{-}\)' . s:delim[1] . '\(.*\)', '\1', '')
+					let l:temp     = substitute(l:line, '\(.*\)' . s:delim[0] . '\(.\{-}\)' . s:delim[1] . '\(.*\)', '\2', '')
+					let l:temp_suf = substitute(l:line, '\(.*\)' . s:delim[0] . '\(.\{-}\)' . s:delim[1] . '\(.*\)', '\3', '')
+					if (l:temp != "")
+						let l:posteval = eval(l:temp)
+						if (l:posteval != l:temp)
+							let l:line = l:temp_pre . l:posteval . l:temp_suf
 						endif
 					endif
 				endif
 			endif
-			call add(l:lines, s:backref(l:line, i, a:ref))
+			call add(l:lines, l:line)
 		endfor
 	endif
 	return l:lines
