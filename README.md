@@ -6,9 +6,6 @@ support back-refarence and calculation with eval() of Vim.
 ## usage
 :Expandserialnumber
 
-## known problem
-if expanded at end of text, blank line is inserted at the end
-
 ## example
 ### 1.
 expand simple format

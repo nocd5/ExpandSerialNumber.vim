@@ -12,35 +12,38 @@
 
 "--------------------------------------
 " setting
-if exists("g:expand_serial_number_delimiter")
-	let s:delim = g:expand_serial_number_delimiter
-else
-	let s:delim = ['\[', '\]']
+if !exists("g:expand_serial_number_delimiter")
+	let g:expand_serial_number_delimiter = ['\[', '\]']
 endif
 
-if exists("g:expand_serial_number_separator")
-	let s:separator = g:expand_serial_number_separator
-else
-	let s:separator = '-'
+if !exists("g:expand_serial_number_separator")
+	let g:expand_serial_number_separator = '-'
 endif
 
 let s:NumberPat      = '\s*\(-\?\%\(\%\(0[xX][0-9a-fA-F]\+\)\|\d\+\)\)\s*'
-let s:strPat         = '\(.\{-}\)' . s:delim[0] . s:NumberPat . s:separator . s:NumberPat . s:delim[1] . '\(.*\)'
+let s:strPat         = '\(.\{-}\)'
+                     \ . g:expand_serial_number_delimiter[0]
+                     \ . s:NumberPat . g:expand_serial_number_separator . s:NumberPat
+                     \ . g:expand_serial_number_delimiter[1]
+                     \ . '\(.*\)'
 let s:NumCharPat     = '\%\([\ 0-9A-Za-z''"%+-/()]\|\*\|0[xX][0-9a-fA-F]\+\)\{-}'
-" let s:NumCharPat     = '\%\([\ 0-9+-/()]\|\*\|0[xX][0-9a-fA-F]\+\)\{-}'
 let s:ExceptOctalPat =  '^0\+\ze[^xX]\|^-\zs0\+\ze[^xX]'
 "--------------------------------------
 
 "-----------------------------------
 " replace & eval backref
 function! s:backref(string, num, ref)
-	let l:strExprPat = s:delim[0] . '\(' . s:NumCharPat . '\\' . a:ref . '\>' . s:NumCharPat . '\)' . s:delim[1]
+	let l:strExprPat = g:expand_serial_number_delimiter[0] . '\(' . s:NumCharPat
+                     \ . '\\' . a:ref . '\>'
+                     \ . s:NumCharPat . '\)' . g:expand_serial_number_delimiter[1]
 	let l:src = a:string
 	if (match(l:src, l:strExprPat) != -1)
 		let l:expr = substitute(l:src, '.\{-}' . l:strExprPat . '.*', '\1', '')
 		let l:imexp = substitute(l:expr, '\\' . a:ref . '\>', a:num, 'g')
 		if (match(l:imexp, '\\\d\+') != -1)
-			let l:result = s:delim[0] . escape(l:imexp, "\\") . s:delim[1]
+			let l:result = g:expand_serial_number_delimiter[0]
+                         \ . escape(l:imexp, "\\")
+                         \ . g:expand_serial_number_delimiter[1]
 		else
 			let l:result = eval(l:imexp)
 		endif
@@ -90,10 +93,13 @@ function! s:expandnum(line, ref)
 			endif
 			let l:line = s:backref(l:line, i, a:ref)
 			if (match(l:line, s:strPat) == -1)
-				if (match(l:line, s:delim[0] . '\(.\{-}\)' . s:delim[1]) != -1)
-					let l:temp_pre = substitute(l:line, '\(.*\)' . s:delim[0] . '\(.\{-}\)' . s:delim[1] . '\(.*\)', '\1', '')
-					let l:temp     = substitute(l:line, '\(.*\)' . s:delim[0] . '\(.\{-}\)' . s:delim[1] . '\(.*\)', '\2', '')
-					let l:temp_suf = substitute(l:line, '\(.*\)' . s:delim[0] . '\(.\{-}\)' . s:delim[1] . '\(.*\)', '\3', '')
+				let l:pat = '\(.*\)' . g:expand_serial_number_delimiter[0]
+                          \ . '\(.\{-}\)'
+                          \ . g:expand_serial_number_delimiter[1] . '\(.*\)'
+				if (match(l:line, l:pat) != -1)
+					let l:temp_pre = substitute(l:line, l:pat , '\1', '')
+					let l:temp     = substitute(l:line, l:pat , '\2', '')
+					let l:temp_suf = substitute(l:line, l:pat , '\3', '')
 					if (l:temp != "")
 						let l:posteval = eval(l:temp)
 						if (l:posteval != l:temp)
@@ -127,8 +133,8 @@ endfunction
 " main
 function! ExpandSerialNumber#ExpandSerialNumber() range
 	let l:dest = s:scanlines(getline(a:firstline, a:lastline), 1)
-	:execute ":" . a:firstline . "," . a:lastline . ' s/.*\n//'
-	call append(a:firstline-1, l:dest)
+	call append(a:lastline, l:dest)
+	execute "silent " . a:firstline . " normal " . (a:lastline - a:firstline +1) . "dd"
 endfunction
 "-----------------------------------
 
