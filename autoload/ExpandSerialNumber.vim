@@ -12,66 +12,40 @@
 
 "--------------------------------------
 " setting
-function! s:settings()
-	if exists("g:expand_serial_number_delimiter")
-		let s:delim = g:expand_serial_number_delimiter
-	else
-		let s:delim = ['\[', '\]']
-	endif
+if !exists("g:expand_serial_number_delimiter")
+	let g:expand_serial_number_delimiter = ['\[', '\]']
+endif
 
-	if exists("g:expand_serial_number_separator")
-		let s:sep = g:expand_serial_number_separator
-	endif
-		let s:sep = '-'
-	endif
+if !exists("g:expand_serial_number_separator")
+	let g:expand_serial_number_separator = '-'
+endif
 
-	if !exists("g:expand_serial_number_verbose")
-		let g:expand_serial_number_verbose = 0
-	endif
-
-	let s:NumberPat      = '\s*\(-\?\%\(\%\(0[xX][0-9a-fA-F]\+\)\|\d\+\)\)\s*'
-	let s:strPat         = '\(.\{-}\)'
-                         \ . s:delim[0]
-                         \ . s:NumberPat . s:sep . s:NumberPat
-                         \ . s:delim[1]
-                         \ . '\(.*\)'
-	let s:NumCharPat     = '\%\([\ 0-9A-Za-z''"%+-/()]\|\*\|0[xX][0-9a-fA-F]\+\)\{-}'
-	let s:ExceptOctalPat =  '^0\+\ze[^xX]\|^-\zs0\+\ze[^xX]'
-endfunction
+let s:NumberPat      = '\s*\(-\?\%\(\%\(0[xX][0-9a-fA-F]\+\)\|\d\+\)\)\s*'
+let s:strPat         = '\(.\{-}\)'
+                     \ . g:expand_serial_number_delimiter[0]
+                     \ . s:NumberPat . g:expand_serial_number_separator . s:NumberPat
+                     \ . g:expand_serial_number_delimiter[1]
+                     \ . '\(.*\)'
+let s:NumCharPat     = '\%\([\ 0-9A-Za-z''"%+-/()]\|\*\|0[xX][0-9a-fA-F]\+\)\{-}'
+let s:ExceptOctalPat =  '^0\+\ze[^xX]\|^-\zs0\+\ze[^xX]'
 "--------------------------------------
-
-"-----------------------------------
-" eval() wrapper
-" except invalid expression
-function! s:eval_wrp(expr)
-	let l:result = a:expr
-	try
-		let result = eval(a:expr)
-	catch
-		if (g:expand_serial_number_verbose == 1)
-			echomsg v:exception . " -> eval(" . a:expr .")"
-		endif
-	endtry
-	return l:result
-endfunction
-"-----------------------------------
 
 "-----------------------------------
 " replace & eval backref
 function! s:backref(string, num, ref)
-	let l:strExprPat = s:delim[0] . '\(' . s:NumCharPat
+	let l:strExprPat = g:expand_serial_number_delimiter[0] . '\(' . s:NumCharPat
                      \ . '\\' . a:ref . '\>'
-                     \ . s:NumCharPat . '\)' . s:delim[1]
+                     \ . s:NumCharPat . '\)' . g:expand_serial_number_delimiter[1]
 	let l:src = a:string
 	if (match(l:src, l:strExprPat) != -1)
 		let l:expr = substitute(l:src, '.\{-}' . l:strExprPat . '.*', '\1', '')
 		let l:imexp = substitute(l:expr, '\\' . a:ref . '\>', a:num, 'g')
 		if (match(l:imexp, '\\\d\+') != -1)
-			let l:result = s:delim[0]
+			let l:result = g:expand_serial_number_delimiter[0]
                          \ . escape(l:imexp, "\\")
-                         \ . s:delim[1]
+                         \ . g:expand_serial_number_delimiter[1]
 		else
-			let l:result = s:eval_wrp(l:imexp)
+			let l:result = eval(l:imexp)
 		endif
 		let l:src = s:backref(substitute(l:src, l:strExprPat, l:result, ''), a:num, a:ref)
 	endif
@@ -117,52 +91,19 @@ function! s:expandnum(line, ref)
 			else
 				let l:line = l:strPre . printf('%0'. l:digit . 'd', i) . l:strSuf
 			endif
-
-
-			let l:extd_pre =  l:strPre != "" ? l:line[0:strlen(l:strPre)-1] : ""
-			let l:extd     =  l:line[strlen(l:strPre):strlen(l:line)-strlen(l:strSuf)-1]
-			let l:extd_suf =  l:strSuf != "" ? l:line[strlen(l:line)-strlen(l:strSuf):strlen(l:line)-1] : ""
-
-			let l:extd_pre = s:backref(l:extd_pre, i, a:ref)
-			let l:extd     = s:backref(l:extd    , i, a:ref)
-			let l:extd_suf = s:backref(l:extd_suf, i, a:ref)
-
-			let l:line = l:extd_pre . l:extd . l:extd_suf
-
-			if (match(l:extd_pre, '\(.*\%\(.*' . s:delim[1] . '.*\)\@!' .  s:delim[0] . '.*\)') != -1)
-				let l:extd_pre_pre = substitute(l:extd_pre, '\(.\{-}\)\%\(.*' . s:delim[1] . '.*\)\@!\(' .  s:delim[0] . '.*\)', '\1', '')
-				let l:extd_pre_suf = substitute(l:extd_pre, '\(.\{-}\)\%\(.*' . s:delim[1] . '.*\)\@!\(' .  s:delim[0] . '.*\)', '\2', '')
-			else
-				let l:extd_pre_pre = ""
-				let l:extd_pre_suf = ""
-			endif
-
-			if (match(l:extd_suf, '\(.*\%\(.*' . s:delim[0] . '.*\)\@<!' . s:delim[1] . '\)\(.*\)') != -1)
-				let l:extd_suf_pre = substitute(l:extd_suf, '\(.*\%\(.*' . s:delim[0] . '.*\)\@<!' . s:delim[1] . '\)\(.*\)', '\1', '')
-				let l:extd_suf_suf = substitute(l:extd_suf, '\(.*\%\(.*' . s:delim[0] . '.*\)\@<!' . s:delim[1] . '\)\(.*\)', '\2', '')
-			else
-				let l:extd_suf_pre = ""
-				let l:extd_suf_suf = ""
-			endif
-
-			let l:extd_pre = l:extd_pre_pre
-			let l:extd     = l:extd_pre_suf . l:extd . l:extd_suf_pre
-			let l:extd_suf = l:extd_suf_suf
-
-			if (match(l:extd, s:strPat) == -1)
-				let l:pat = '\(.*\)' . s:delim[0]
+			let l:line = s:backref(l:line, i, a:ref)
+			if (match(l:line, s:strPat) == -1)
+				let l:pat = '\(.*\)' . g:expand_serial_number_delimiter[0]
                           \ . '\(.\{-}\)'
-                          \ . s:delim[1] . '\(.*\)'
-				if (match(l:extd, l:pat) != -1)
-					let l:temp_pre = substitute(l:extd, l:pat , '\1', '')
-					let l:temp     = substitute(l:extd, l:pat , '\2', '')
-					let l:temp_suf = substitute(l:extd, l:pat , '\3', '')
+                          \ . g:expand_serial_number_delimiter[1] . '\(.*\)'
+				if (match(l:line, l:pat) != -1)
+					let l:temp_pre = substitute(l:line, l:pat , '\1', '')
+					let l:temp     = substitute(l:line, l:pat , '\2', '')
+					let l:temp_suf = substitute(l:line, l:pat , '\3', '')
 					if (l:temp != "")
-						let l:posteval = s:eval_wrp(l:temp)
+						let l:posteval = eval(l:temp)
 						if (l:posteval != l:temp)
-							let l:line = l:extd_pre . l:posteval . l:extd_suf
-						else
-							let l:line = l:extd_pre . l:temp . l:extd_suf
+							let l:line = l:temp_pre . l:posteval . l:temp_suf
 						endif
 					endif
 				endif
@@ -191,10 +132,9 @@ endfunction
 "-----------------------------------
 " main
 function! ExpandSerialNumber#ExpandSerialNumber() range
-	call s:settings()
 	let l:dest = s:scanlines(getline(a:firstline, a:lastline), 1)
 	call append(a:lastline, l:dest)
-	execute "silent " . a:lastline . "," . a:firstline . " d"
+	execute "silent " . a:firstline . " normal " . (a:lastline - a:firstline +1) . "dd"
 endfunction
 "-----------------------------------
 
