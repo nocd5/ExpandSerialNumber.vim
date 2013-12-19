@@ -59,7 +59,7 @@ endfunction
 function! s:eval_wrp(expr)
 	let l:result = a:expr
 	try
-		let result = eval(a:expr)
+		let l:result = eval(a:expr)
 	catch
 		if (g:expand_serial_number_verbose == 1)
 			echomsg v:exception . " -> eval(" . a:expr .")"
@@ -168,7 +168,10 @@ function! s:expandnum(line, ref)
 					let l:temp     = matchstr(l:extd, l:pat)
 					if (l:temp != "")
 						let l:posteval = s:eval_wrp(l:temp)
-						if (l:posteval != l:temp)
+						" l:posteval type nr, l:temp type string.
+						" 1 and 1*1 is matched,
+						" because string is converted to nr automatically.
+						if (printf("%d",l:posteval) isnot l:temp)
 							let l:line = l:extd_pre . l:posteval . l:extd_suf
 						else
 							let l:line = l:extd_pre . l:extd . l:extd_suf
