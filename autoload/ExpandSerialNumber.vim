@@ -42,7 +42,7 @@ function! s:settings()
                          \ . s:delim[1]
                          \ . '\(.*\)'
 
-	" see also :help /\]
+	" see also `:help /\]`
 	let l:delim_tmp_0    = substitute(s:delim[0], '\\\ze[^\]\^\-]', '', '')
 	let l:delim_tmp_1    = substitute(s:delim[1], '\\\ze[^\]\^\-]', '', '')
 	" char other than delimiter
@@ -53,6 +53,8 @@ function! s:settings()
 	" except octal
 	let s:ExceptOctalPat =  '^0\+\ze[^xX]\|^-\zs0\+\ze[^xX]'
 
+	let s:epPat = '\(.\{-}\)\%\(.*' . s:delim[1] . '.*\)\@!\(' .  s:delim[0] . '.*\)'
+	let s:esPat = '\(.*\%\(.*' . s:delim[0] . '.*\)\@<!' . s:delim[1] . '\)\(.*\)'
 endfunction
 "--------------------------------------
 
@@ -135,27 +137,30 @@ function! s:expandnum(line, ref)
 			endif
 
 
-			let l:extd_pre =  l:strPre != "" ? l:line[0:strlen(l:strPre)-1] : ""
-			let l:extd     =  l:line[strlen(l:strPre):strlen(l:line)-strlen(l:strSuf)-1]
-			let l:extd_suf =  l:strSuf != "" ? l:line[strlen(l:line)-strlen(l:strSuf):strlen(l:line)-1] : ""
+			let l:PreLen  = strlen(l:strPre)
+			let l:SufLen  = strlen(l:strSuf)
+			let l:LineLen = strlen(l:line)
+
+			let l:extd_pre =  l:strPre == "" ? "" : l:line[0 : l:PreLen - 1]
+			let l:extd     =                        l:line[l:PreLen : l:LineLen - l:SufLen - 1]
+			let l:extd_suf =  l:strSuf == "" ? "" : l:line[l:LineLen - l:SufLen : l:LineLen - 1]
 
 			let l:extd_pre = s:backref(l:extd_pre, i, a:ref)
 			let l:extd     = s:backref(l:extd    , i, a:ref)
 			let l:extd_suf = s:backref(l:extd_suf, i, a:ref)
 
 			let l:line = l:extd_pre . l:extd . l:extd_suf
-
-			if (match(l:extd_pre, '\(.*\%\(.*' . s:delim[1] . '.*\)\@!' .  s:delim[0] . '.*\)') != -1)
-				let l:extd_pre_pre = substitute(l:extd_pre, '\(.\{-}\)\%\(.*' . s:delim[1] . '.*\)\@!\(' .  s:delim[0] . '.*\)', '\1', '')
-				let l:extd_pre_suf = substitute(l:extd_pre, '\(.\{-}\)\%\(.*' . s:delim[1] . '.*\)\@!\(' .  s:delim[0] . '.*\)', '\2', '')
+			if (match(l:extd_pre, s:epPat) != -1)
+				let l:extd_pre_pre = substitute(l:extd_pre, s:epPat, '\1', '')
+				let l:extd_pre_suf = substitute(l:extd_pre, s:epPat, '\2', '')
 			else
 				let l:extd_pre_pre = ""
 				let l:extd_pre_suf = ""
 			endif
 
-			if (match(l:extd_suf, '\(.*\%\(.*' . s:delim[0] . '.*\)\@<!' . s:delim[1] . '\)\(.*\)') != -1)
-				let l:extd_suf_pre = substitute(l:extd_suf, '\(.*\%\(.*' . s:delim[0] . '.*\)\@<!' . s:delim[1] . '\)\(.*\)', '\1', '')
-				let l:extd_suf_suf = substitute(l:extd_suf, '\(.*\%\(.*' . s:delim[0] . '.*\)\@<!' . s:delim[1] . '\)\(.*\)', '\2', '')
+			if (match(l:extd_suf, s:esPat) != -1)
+				let l:extd_suf_pre = substitute(l:extd_suf, s:esPat, '\1', '')
+				let l:extd_suf_suf = substitute(l:extd_suf, s:esPat, '\2', '')
 			else
 				let l:extd_suf_pre = ""
 				let l:extd_suf_suf = ""
@@ -166,19 +171,17 @@ function! s:expandnum(line, ref)
 			let l:extd_suf = l:extd_suf_suf
 
 			if (match(l:extd, s:FormatPat) == -1)
-				let l:pat = s:delim[0] . '\zs.\{-}\ze' . s:delim[1]
-				if (match(l:extd, l:pat) != -1)
-					let l:temp     = matchstr(l:extd, l:pat)
-					if (l:temp != "")
-						let l:posteval = s:eval_wrp(l:temp)
-						" l:posteval type nr, l:temp type string.
-						" 1 and 1*1 is matched,
-						" because string is converted to nr automatically.
-						if (printf("%d",l:posteval) isnot l:temp)
-							let l:line = l:extd_pre . l:posteval . l:extd_suf
-						else
-							let l:line = l:extd_pre . l:extd . l:extd_suf
-						endif
+				let l:temp = matchstr(l:extd, s:delim[0] . '\zs.\{-}\ze' . s:delim[1])
+				if (l:temp != "")
+					let l:posteval = s:eval_wrp(l:temp)
+					" 1 and 1*1 is matched.
+					" because l:posteval type nr, l:temp type string,
+					" and string is converted to nr automatically.
+					" see also `:help 41.2` and `:help str2nr()`
+					if (printf("%d",l:posteval) != l:temp)
+						let l:line = l:extd_pre . l:posteval . l:extd_suf
+					else
+						let l:line = l:extd_pre . l:extd . l:extd_suf
 					endif
 				endif
 			endif
