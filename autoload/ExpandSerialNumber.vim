@@ -19,7 +19,7 @@ function! s:settings()
   let s:delim = get(g:, 'expand_serial_number_delimiter', ['\[', '\]'])
   let s:sep   = get(g:, 'expand_serial_number_separator', '-')
 
-	if !exists("g:expand_serial_number_verbose")
+	if !exists('g:expand_serial_number_verbose')
 		let g:expand_serial_number_verbose = 0
 	endif
 
@@ -58,7 +58,7 @@ function! s:eval_wrp(expr)
 		let l:result = eval(a:expr)
 	catch
 		if (g:expand_serial_number_verbose == 1)
-			echomsg v:exception . " -> eval(" . a:expr .")"
+			echomsg v:exception . ' -> eval(' . a:expr .')'
 		endif
 	endtry
 	return l:result
@@ -97,7 +97,7 @@ function! s:expandnum(line, ref)
 	let l:strSuf   = substitute(a:line, s:FormatPat, '\4', '')
 
 	let l:lines = []
-	if (l:strStart != "") && (l:strEnd != "")
+	if (l:strStart !=# '') && (l:strEnd !=# '')
 
 		let l:digit = min([strlen(l:strStart), strlen(l:strEnd)])
 
@@ -132,9 +132,9 @@ function! s:expandnum(line, ref)
 			let l:SufLen  = strlen(l:strSuf)
 			let l:LineLen = strlen(l:line)
 
-			let l:extd_pre =  l:strPre == "" ? "" : l:line[0 : l:PreLen - 1]
+			let l:extd_pre =  l:strPre ==# '' ? '' : l:line[0 : l:PreLen - 1]
 			let l:extd     =                        l:line[l:PreLen : l:LineLen - l:SufLen - 1]
-			let l:extd_suf =  l:strSuf == "" ? "" : l:line[l:LineLen - l:SufLen : l:LineLen - 1]
+			let l:extd_suf =  l:strSuf ==# '' ? '' : l:line[l:LineLen - l:SufLen : l:LineLen - 1]
 
 			let l:extd_pre = s:backref(l:extd_pre, i, a:ref)
 			let l:extd     = s:backref(l:extd    , i, a:ref)
@@ -145,16 +145,16 @@ function! s:expandnum(line, ref)
 				let l:extd_pre_pre = substitute(l:extd_pre, s:epPat, '\1', '')
 				let l:extd_pre_suf = substitute(l:extd_pre, s:epPat, '\2', '')
 			else
-				let l:extd_pre_pre = ""
-				let l:extd_pre_suf = ""
+				let l:extd_pre_pre = ''
+				let l:extd_pre_suf = ''
 			endif
 
 			if (match(l:extd_suf, s:esPat) != -1)
 				let l:extd_suf_pre = substitute(l:extd_suf, s:esPat, '\1', '')
 				let l:extd_suf_suf = substitute(l:extd_suf, s:esPat, '\2', '')
 			else
-				let l:extd_suf_pre = ""
-				let l:extd_suf_suf = ""
+				let l:extd_suf_pre = ''
+				let l:extd_suf_suf = ''
 			endif
 
 			let l:extd_pre = l:extd_pre_pre
@@ -163,13 +163,13 @@ function! s:expandnum(line, ref)
 
 			if (match(l:extd, s:FormatPat) == -1)
 				let l:temp = matchstr(l:extd, s:delim[0] . '\zs.\{-}\ze' . s:delim[1])
-				if (l:temp != "")
+				if (l:temp !=# '')
 					let l:posteval = s:eval_wrp(l:temp)
 					" 1 and 1*1 is matched.
 					" because l:posteval type nr, l:temp type string,
 					" and string is converted to nr automatically.
 					" see also `:help 41.2` and `:help str2nr()`
-					if (printf("%d",l:posteval) != l:temp)
+					if (printf('%d',l:posteval) != l:temp)
 						let l:line = l:extd_pre . l:posteval . l:extd_suf
 					else
 						let l:line = l:extd_pre . l:extd . l:extd_suf
@@ -203,7 +203,7 @@ function! ExpandSerialNumber#ExpandSerialNumber() range
 	call s:settings()
 	let l:dest = s:scanlines(getline(a:firstline, a:lastline), 1)
 	call append(a:lastline, l:dest)
-	execute "silent " . a:lastline . "," . a:firstline . " d"
+	execute 'silent ' . a:lastline . ',' . a:firstline . ' d'
 endfunction
 "-----------------------------------
 
