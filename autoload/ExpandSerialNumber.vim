@@ -16,17 +16,8 @@ set cpo&vim
 "--------------------------------------
 " settings
 function! s:settings()
-	if exists("g:expand_serial_number_delimiter")
-		let s:delim = g:expand_serial_number_delimiter
-	else
-		let s:delim = ['\[', '\]']
-	endif
-
-	if exists("g:expand_serial_number_separator")
-		let s:sep = g:expand_serial_number_separator
-	else
-		let s:sep = '-'
-	endif
+  let s:delim = get(g:, 'expand_serial_number_delimiter', ['\[', '\]'])
+  let s:sep   = get(g:, 'expand_serial_number_separator', '-')
 
 	if !exists("g:expand_serial_number_verbose")
 		let g:expand_serial_number_verbose = 0
