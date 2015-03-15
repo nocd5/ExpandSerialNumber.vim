@@ -16,8 +16,8 @@ set cpo&vim
 "--------------------------------------
 " settings
 function! s:settings()
-  let s:delim = get(g:, 'expand_serial_number_delimiter', ['\[', '\]'])
-  let s:sep   = get(g:, 'expand_serial_number_separator', '-')
+	let s:delim = get(g:, 'expand_serial_number_delimiter', ['\[', '\]'])
+	let s:sep   = get(g:, 'expand_serial_number_separator', '-')
 
 	if !exists('g:expand_serial_number_verbose')
 		let g:expand_serial_number_verbose = 0
@@ -28,10 +28,10 @@ function! s:settings()
 
 	" expand format
 	let s:FormatPat      = '\(.\{-}\)'
-                         \ . s:delim[0]
-                         \ . s:NumberPat . s:sep . s:NumberPat
-                         \ . s:delim[1]
-                         \ . '\(.*\)'
+												 \ . s:delim[0]
+												 \ . s:NumberPat . s:sep . s:NumberPat
+												 \ . s:delim[1]
+												 \ . '\(.*\)'
 
 	" see also `:help /\]`
 	let l:delim_tmp_0    = substitute(s:delim[0], '\\\ze[^\]\^\-]', '', '')
@@ -42,9 +42,9 @@ function! s:settings()
 	let s:NumCharPat     = '\%\(' . l:nondelim . '\|\%\(' . s:delim[0] . l:nondelim . '\{-}' . s:delim[1] . '\)\)\{-}'
 
 	" except octal
-	let s:ExceptOctalPat =  '^0\+\ze[^xX]\|^-\zs0\+\ze[^xX]'
+	let s:ExceptOctalPat = '^0\+\ze[^xX]\|^-\zs0\+\ze[^xX]'
 
-	let s:epPat = '\(.\{-}\)\%\(.*' . s:delim[1] . '.*\)\@!\(' .  s:delim[0] . '.*\)'
+	let s:epPat = '\(.\{-}\)\%\(.*' . s:delim[1] . '.*\)\@!\(' . s:delim[0] . '.*\)'
 	let s:esPat = '\(.*\%\(.*' . s:delim[0] . '.*\)\@<!' . s:delim[1] . '\)\(.*\)'
 endfunction
 "--------------------------------------
@@ -69,16 +69,16 @@ endfunction
 " replace & eval backref
 function! s:backref(string, num, ref)
 	let l:strExprPat = s:delim[0] . '\(' . s:NumCharPat
-                     \ . '\\' . a:ref . '\>'
-                     \ . s:NumCharPat . '\)' . s:delim[1]
+										 \ . '\\' . a:ref . '\>'
+										 \ . s:NumCharPat . '\)' . s:delim[1]
 	let l:src = a:string
 	if (match(l:src, l:strExprPat) != -1)
 		let l:expr = substitute(l:src, '.\{-}' . l:strExprPat . '.*', '\1', '')
 		let l:imexp = substitute(l:expr, '\\' . a:ref . '\>', a:num, 'g')
 		if (match(l:imexp, '\(\\\d\+\)\|\('. s:FormatPat . '\)' ) != -1)
 			let l:result = s:delim[0]
-                         \ . escape(l:imexp, "\\")
-                         \ . s:delim[1]
+												 \ . escape(l:imexp, "\\")
+												 \ . s:delim[1]
 		else
 			let l:result = s:eval_wrp(l:imexp)
 		endif
@@ -132,9 +132,9 @@ function! s:expandnum(line, ref)
 			let l:SufLen  = strlen(l:strSuf)
 			let l:LineLen = strlen(l:line)
 
-			let l:extd_pre =  l:strPre ==# '' ? '' : l:line[0 : l:PreLen - 1]
+			let l:extd_pre = l:strPre ==# '' ? '' : l:line[0 : l:PreLen - 1]
 			let l:extd     =                        l:line[l:PreLen : l:LineLen - l:SufLen - 1]
-			let l:extd_suf =  l:strSuf ==# '' ? '' : l:line[l:LineLen - l:SufLen : l:LineLen - 1]
+			let l:extd_suf = l:strSuf ==# '' ? '' : l:line[l:LineLen - l:SufLen : l:LineLen - 1]
 
 			let l:extd_pre = s:backref(l:extd_pre, i, a:ref)
 			let l:extd     = s:backref(l:extd    , i, a:ref)
